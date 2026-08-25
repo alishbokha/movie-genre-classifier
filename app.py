@@ -2,10 +2,12 @@ import streamlit as st
 import joblib
 import re
 
+# Load genre models
 vectorizer = joblib.load("tfidf_vectorizer.pkl")
 genre_model = joblib.load("genre_classifier.pkl")
 mlb = joblib.load("genre_encoder.pkl")
 
+# Load sentiment models
 sentiment_tfidf = joblib.load("sentiment_tfidf.pkl")
 sentiment_model = joblib.load("sentiment_model.pkl")
 
@@ -26,53 +28,94 @@ st.set_page_config(
 
 st.title("🎬 Movie NLP Classifier")
 st.write(
-    "Predict movie genres from a description and movie sentiment from a review."
+    "Choose what you want to analyze: movie genres or movie review sentiment."
 )
 
-st.subheader("🎬 Movie Description")
-
-description = st.text_area(
-    "Enter the movie description",
-    placeholder="Example: A young wizard discovers a magical world and fights a powerful dark enemy.",
-    height=150
+# Let the user choose one function
+option = st.radio(
+    "What would you like to do?",
+    [
+        "🎬 Predict Movie Genres",
+        "⭐ Analyze Movie Sentiment"
+    ]
 )
 
-st.subheader("⭐ Movie Review")
+# -----------------------------
+# Genre classification
+# -----------------------------
+if option == "🎬 Predict Movie Genres":
 
-review = st.text_area(
-    "Enter the movie review",
-    placeholder="Example: This movie was amazing. The acting was fantastic and I really enjoyed the story.",
-    height=150
-)
+    st.subheader("🎬 Movie Genre Prediction")
 
-if st.button("Predict", type="primary"):
+    description = st.text_area(
+        "Movie Description",
+        placeholder=(
+            "Example: A young wizard discovers a magical world "
+            "and fights a powerful dark enemy."
+        ),
+        height=180
+    )
 
-    if description.strip():
-        cleaned_description = clean_text(description)
-        description_vector = vectorizer.transform([cleaned_description])
-        genre_prediction = genre_model.predict(description_vector)
-        predicted_genres = mlb.inverse_transform(genre_prediction)[0]
+    if st.button("Predict Genres", type="primary"):
 
-        st.subheader("🎬 Predicted Genres")
-
-        if len(predicted_genres) == 0:
-            st.info("No genre was predicted.")
+        if not description.strip():
+            st.warning("Please enter a movie description.")
         else:
-            for genre in predicted_genres:
-                st.success(genre)
-    else:
-        st.info("Enter a movie description to predict genres.")
+            cleaned_description = clean_text(description)
 
-    if review.strip():
-        cleaned_review = clean_text(review)
-        review_vector = sentiment_tfidf.transform([cleaned_review])
-        sentiment_prediction = sentiment_model.predict(review_vector)[0]
+            text_vector = vectorizer.transform(
+                [cleaned_description]
+            )
 
-        st.subheader("⭐ Movie Sentiment")
+            prediction = genre_model.predict(text_vector)
 
-        if sentiment_prediction == 1:
-            st.success("Positive 😊")
+            predicted_genres = mlb.inverse_transform(
+                prediction
+            )[0]
+
+            st.subheader("🎬 Predicted Genres")
+
+            if len(predicted_genres) == 0:
+                st.info("No genre was predicted.")
+            else:
+                for genre in predicted_genres:
+                    st.success(genre)
+
+
+# -----------------------------
+# Sentiment classification
+# -----------------------------
+else:
+
+    st.subheader("⭐ Movie Review Sentiment")
+
+    review = st.text_area(
+        "Movie Review",
+        placeholder=(
+            "Example: This movie was amazing. "
+            "The acting was fantastic and I really enjoyed the story."
+        ),
+        height=180
+    )
+
+    if st.button("Analyze Sentiment", type="primary"):
+
+        if not review.strip():
+            st.warning("Please enter a movie review.")
         else:
-            st.error("Negative 😞")
-    else:
-        st.info("Enter a movie review to predict sentiment.")
+            cleaned_review = clean_text(review)
+
+            review_vector = sentiment_tfidf.transform(
+                [cleaned_review]
+            )
+
+            sentiment_prediction = sentiment_model.predict(
+                review_vector
+            )[0]
+
+            st.subheader("⭐ Predicted Sentiment")
+
+            if sentiment_prediction == 1:
+                st.success("Positive 😊")
+            else:
+                st.error("Negative 😞")
