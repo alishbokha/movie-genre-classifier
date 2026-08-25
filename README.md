@@ -139,3 +139,16 @@ Movie Review
 Logistic Regression
       ↓
 Positive / Negative
+
+
+# ⚠️ Current Limitations
+
+The current models provide good baseline results, but there are some limitations.
+
+- 🎬 **Genre classification:** The dataset is relatively small and unevenly distributed across genres, so rare genres are harder to predict accurately.
+- 🎬 Some movies have overlapping genres, making multi-label classification challenging.
+- ⭐ **Sentiment analysis:** The model can struggle with sarcasm, mixed opinions, negation, and context.
+- ⭐ The sentiment model currently supports only **Positive** and **Negative**; there is no Neutral class.
+- 🧠 Both models use **TF-IDF**, which has limited semantic and contextual understanding compared with modern transformer-based models.
+
+These limitations could be improved in future versions using **larger datasets, better-balanced classes, word embeddings, LSTM/BiLSTM, or transformer-based models such as BERT**.
