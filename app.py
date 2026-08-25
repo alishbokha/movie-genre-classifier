@@ -2,14 +2,15 @@ import streamlit as st
 import joblib
 import re
 
-# Load the trained models
 vectorizer = joblib.load("tfidf_vectorizer.pkl")
-model = joblib.load("genre_classifier.pkl")
+genre_model = joblib.load("genre_classifier.pkl")
 mlb = joblib.load("genre_encoder.pkl")
+
+sentiment_tfidf = joblib.load("sentiment_tfidf.pkl")
+sentiment_model = joblib.load("sentiment_model.pkl")
 
 
 def clean_text(text):
-    """Apply the same basic cleaning used during model training."""
     text = text.lower()
     text = text.replace("'", "")
     text = re.sub(r"[^a-zA-Z\s]", " ", text)
@@ -17,47 +18,61 @@ def clean_text(text):
     return text
 
 
-# Page configuration
 st.set_page_config(
-    page_title="Movie Genre Classifier",
+    page_title="Movie NLP Classifier",
     page_icon="🎬",
     layout="centered"
 )
 
-st.title("🎬 Movie Genre Classifier")
+st.title("🎬 Movie NLP Classifier")
 st.write(
-    "Enter a movie description and the trained NLP model "
-    "will predict its genres."
+    "Predict movie genres from a description and movie sentiment from a review."
 )
 
-# User input
+st.subheader("🎬 Movie Description")
+
 description = st.text_area(
-    "Movie Description",
-    placeholder="Example: A young wizard discovers a magical world "
-                "and fights a powerful dark enemy.",
-    height=180
+    "Enter the movie description",
+    placeholder="Example: A young wizard discovers a magical world and fights a powerful dark enemy.",
+    height=150
 )
 
-if st.button("Predict Genres", type="primary"):
-    if not description.strip():
-        st.warning("Please enter a movie description.")
-    else:
-        # Clean input using the same preprocessing approach
+st.subheader("⭐ Movie Review")
+
+review = st.text_area(
+    "Enter the movie review",
+    placeholder="Example: This movie was amazing. The acting was fantastic and I really enjoyed the story.",
+    height=150
+)
+
+if st.button("Predict", type="primary"):
+
+    if description.strip():
         cleaned_description = clean_text(description)
+        description_vector = vectorizer.transform([cleaned_description])
+        genre_prediction = genre_model.predict(description_vector)
+        predicted_genres = mlb.inverse_transform(genre_prediction)[0]
 
-        # Transform text using the saved TF-IDF vectorizer
-        text_vector = vectorizer.transform([cleaned_description])
-
-        # Predict the multi-label genres
-        prediction = model.predict(text_vector)
-
-        # Convert 0/1 labels into genre names
-        predicted_genres = mlb.inverse_transform(prediction)[0]
-
-        st.subheader("Predicted Genres")
+        st.subheader("🎬 Predicted Genres")
 
         if len(predicted_genres) == 0:
             st.info("No genre was predicted.")
         else:
             for genre in predicted_genres:
                 st.success(genre)
+    else:
+        st.info("Enter a movie description to predict genres.")
+
+    if review.strip():
+        cleaned_review = clean_text(review)
+        review_vector = sentiment_tfidf.transform([cleaned_review])
+        sentiment_prediction = sentiment_model.predict(review_vector)[0]
+
+        st.subheader("⭐ Movie Sentiment")
+
+        if sentiment_prediction == 1:
+            st.success("Positive 😊")
+        else:
+            st.error("Negative 😞")
+    else:
+        st.info("Enter a movie review to predict sentiment.")
